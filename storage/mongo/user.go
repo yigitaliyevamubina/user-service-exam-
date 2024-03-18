@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type userRepo struct {
@@ -62,13 +63,14 @@ func (u *userRepo) UpdateUser(ctx context.Context, req *pb.User) (*pb.User, erro
 
 	filter := bson.M{"_id": id}
 
-	updateReq := bson.D{
-		{"$set", bson.D{
-			{"first_name", req.FirstName},
-			{"last_name", req.LastName},
-			{"age", req.Age},
-			{"updated_at", time.Now()},
-		}},
+
+	updateReq := bson.M{
+		"$set": bson.M{
+			"first_name": req.FirstName,
+			"last_name": req.LastName,
+			"age": req.Age,
+			"updated_at": time.Now(),
+		},
 	}
 
 	err = u.collection.FindOneAndUpdate(ctx, filter, updateReq).Decode(&response)
@@ -99,7 +101,12 @@ func (u *userRepo) DeleteUser(ctx context.Context, req *pb.GetUserId) (*pb.Statu
 func (u *userRepo) ListUsers(ctx context.Context, req *pb.GetListRequest) (*pb.GetListResponse, error) {
 	var response pb.GetListResponse
 
-	cursor, err := u.collection.Find(ctx, bson.M{})
+	reqOptions := options.Find()
+
+	reqOptions.SetSkip(int64((req.Page - 1) * req.Limit))
+	reqOptions.SetLimit(int64(req.Limit))
+
+	cursor, err := u.collection.Find(ctx, bson.M{}, reqOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -147,13 +154,16 @@ func (u *userRepo) UpdateRefreshToken(ctx context.Context, req *pb.UpdateRefresh
 	}
 
 	filter := bson.M{"_id": id}
-	updateReq := bson.D{
-		{"$set", bson.D{
-			{"refreshtoken", req.RefreshToken},
-		}},
+	updateReq := bson.M{
+		"$set": bson.M{
+			"refresh_token": req.RefreshToken,
+		},
 	}
 
 	updateResult, err := u.collection.UpdateOne(ctx, filter, updateReq)
+	if err != nil {
+		return nil, err
+	}
 	if updateResult.ModifiedCount == 0 {
 		return &pb.Status{Success: false}, nil
 	}

@@ -40,7 +40,7 @@ func New(cfg *config.Config, log logger.Logger) (*Service, error) {
 	}
 
 	return &Service{UserService: service.NewUserService(storage, log, grpcClient)}, nil
-}
+} 
 
 func (s *Service) Run(log logger.Logger, cfg *config.Config) {
 	server := grpc.NewServer()

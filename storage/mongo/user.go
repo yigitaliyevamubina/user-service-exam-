@@ -6,9 +6,8 @@ import (
 	"exam/user-service/pkg/logger"
 	"time"
 
-	"github.com/spf13/cast"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -23,6 +22,7 @@ func NewUserRepo(collection *mongo.Collection, log logger.Logger) *userRepo {
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *pb.User) (*pb.User, error) {
+	user.Id = uuid.NewString()
 	result, err := u.collection.InsertOne(context.Background(), user)
 	if err != nil {
 		return nil, err
@@ -39,14 +39,9 @@ func (u *userRepo) CreateUser(ctx context.Context, user *pb.User) (*pb.User, err
 }
 
 func (u *userRepo) GetUserById(ctx context.Context, userId *pb.GetUserId) (*pb.User, error) {
-	id, err := primitive.ObjectIDFromHex(userId.UserId)
-	if err != nil {
-		return nil, err
-	}
-
 	var response pb.User
-	filter := bson.M{"_id": id}
-	err = u.collection.FindOne(ctx, filter).Decode(&response)
+	filter := bson.M{"id": userId.UserId}
+	err := u.collection.FindOne(ctx, filter).Decode(&response)
 	if err != nil {
 		return nil, err
 	}
@@ -56,41 +51,29 @@ func (u *userRepo) GetUserById(ctx context.Context, userId *pb.GetUserId) (*pb.U
 
 func (u *userRepo) UpdateUser(ctx context.Context, req *pb.User) (*pb.User, error) {
 	var response pb.User
-	id, err := primitive.ObjectIDFromHex(req.Id)
-	if err != nil {
-		return nil, err
-	}
 
-	filter := bson.M{"_id": id}
-
+	filter := bson.M{"_id": req.Id}
 
 	updateReq := bson.M{
 		"$set": bson.M{
 			"first_name": req.FirstName,
-			"last_name": req.LastName,
-			"age": req.Age,
+			"last_name":  req.LastName,
+			"age":        req.Age,
 			"updated_at": time.Now(),
 		},
 	}
 
-	err = u.collection.FindOneAndUpdate(ctx, filter, updateReq).Decode(&response)
+	err := u.collection.FindOneAndUpdate(ctx, filter, updateReq).Decode(&response)
 	if err != nil {
 		return nil, err
 	}
-
-	response.Id = cast.ToString(id)
 
 	return &response, nil
 }
 
 func (u *userRepo) DeleteUser(ctx context.Context, req *pb.GetUserId) (*pb.Status, error) {
-	id, err := primitive.ObjectIDFromHex(req.UserId)
-	if err != nil {
-		return &pb.Status{Success: false}, err
-	}
-
-	filter := bson.M{"_id": id}
-	_, err = u.collection.DeleteOne(ctx, filter)
+	filter := bson.M{"id": req.UserId}
+	_, err := u.collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return &pb.Status{Success: false}, err
 	}
@@ -147,13 +130,7 @@ func (u *userRepo) Check(ctx context.Context, req *pb.IfExists) (*pb.User, error
 }
 
 func (u *userRepo) UpdateRefreshToken(ctx context.Context, req *pb.UpdateRefreshTokenReq) (*pb.Status, error) {
-
-	id, err := primitive.ObjectIDFromHex(req.UserId)
-	if err != nil {
-		return nil, err
-	}
-
-	filter := bson.M{"_id": id}
+	filter := bson.M{"id": req.UserId}
 	updateReq := bson.M{
 		"$set": bson.M{
 			"refresh_token": req.RefreshToken,

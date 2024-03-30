@@ -23,7 +23,7 @@ func NewUserRepo(collection *mongo.Collection, log logger.Logger) *userRepo {
 
 func (u *userRepo) CreateUser(ctx context.Context, user *pb.User) (*pb.User, error) {
 	user.Id = uuid.NewString()
-	result, err := u.collection.InsertOne(context.Background(), user)
+	result, err := u.collection.InsertOne(ctx, user)
 	if err != nil {
 		return nil, err
 	}

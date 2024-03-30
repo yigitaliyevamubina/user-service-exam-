@@ -2,6 +2,7 @@ package main
 
 import (
 	"exam/user-service/config"
+	con "exam/user-service/kafka/consumer"
 	"exam/user-service/pkg/logger"
 	service2 "exam/user-service/service"
 )
@@ -15,6 +16,18 @@ func main() {
 		log.Error("error while accessing services", logger.Error(err))
 		return
 	}
+
+	//kafka\\
+	consumer, err := con.NewKafkaConsumer([]string{"kafka:9092"}, "kafka-user", "")
+	if err != nil {
+		log.Fatal("error while creating a new kafka consumer", logger.Error(err))
+	}
+	defer consumer.Close()
+
+	go func() {
+		consumer.ConsumeMessages(con.ConsumeHandler)
+	}()
+	//kafka\\
 
 	service.Run(log, cfg)
 }

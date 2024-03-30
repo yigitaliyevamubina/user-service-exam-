@@ -7,11 +7,12 @@ import (
 	db2 "exam/user-service/pkg/db"
 	"exam/user-service/pkg/logger"
 	"exam/user-service/storage/repo"
+	"testing"
+	"time"
+
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
-	"testing"
-	"time"
 )
 
 type UserTestSuite struct {
